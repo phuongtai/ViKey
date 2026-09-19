@@ -8,6 +8,8 @@
     <string>ViKey</string>
     <key>CFBundleIdentifier</key>
     <string>com.vikey.app</string>
+    <key>CFBundleIconFile</key>
+    <string>ViKey</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>

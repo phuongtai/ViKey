@@ -3,9 +3,22 @@
 <plist version="1.0">
 <dict>
 	<key>files</key>
-	<dict/>
+	<dict>
+		<key>Resources/ViKey.icns</key>
+		<data>
+		Hma1LmRwP16OzKk5ffXNVqRWlIM=
+		</data>
+	</dict>
 	<key>files2</key>
-	<dict/>
+	<dict>
+		<key>Resources/ViKey.icns</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			rUyQBEwr0wXF1S268Xdm5MdRo8NoAh+aaL1v/P4l8bI=
+			</data>
+		</dict>
+	</dict>
 	<key>rules</key>
 	<dict>
 		<key>^Resources/</key>

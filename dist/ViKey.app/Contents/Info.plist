@@ -6,6 +6,8 @@
 	<string>en</string>
 	<key>CFBundleExecutable</key>
 	<string>ViKey</string>
+	<key>CFBundleIconFile</key>
+	<string>ViKey</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.vikey.app</string>
 	<key>CFBundleInfoDictionaryVersion</key>

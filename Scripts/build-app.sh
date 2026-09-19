@@ -13,9 +13,10 @@ swift build -c "$configuration"
 bin_path="$(swift build --show-bin-path -c "$configuration")"
 
 rm -rf "$app"
-mkdir -p "$app/Contents/MacOS"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin_path/ViKey" "$app/Contents/MacOS/ViKey"
 cp "$root/Scripts/Info.plist" "$app/Contents/Info.plist"
+cp "$root/Assets/ViKey.icns" "$app/Contents/Resources/ViKey.icns"
 
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" "$app/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build_number" "$app/Contents/Info.plist"
