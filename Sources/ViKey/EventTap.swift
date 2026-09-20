@@ -191,7 +191,11 @@ final class EventTap {
         for isDown in [true, false] {
             guard let e = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: isDown) else { continue }
             e.flags = []
-            e.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
+            // Chromium inserts the Unicode payload on both events when it is
+            // attached to key-up as well. Text belongs on key-down only.
+            if isDown {
+                e.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
+            }
             e.setIntegerValueField(.eventSourceUserData, value: vikeyEventMarker)
             e.tapPostEvent(proxy)
         }

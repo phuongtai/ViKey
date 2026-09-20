@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         workspace.addObserver(self, selector: #selector(contextChanged),
                               name: NSWorkspace.activeSpaceDidChangeNotification, object: nil)
 
+        UpdateService.shared.checkForUpdates(presentWhenCurrent: false)
         guard requestAccessibilityPermission() else { return }
         startTap()
     }
@@ -131,6 +132,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         perChar.toolTip = "Gửi từng ký tự một. Bật nếu gõ bị lỗi trong Electron, Java hoặc terminal."
 
         menu.addItem(.separator())
+        menu.addItem(withTitle: "Kiểm tra cập nhật…",
+                 action: #selector(checkForUpdates), keyEquivalent: "").target = self
+        menu.addItem(.separator())
         menu.addItem(withTitle: "Thoát ViKey", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         return menu
     }
@@ -161,5 +165,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleCompatibility() {
         prefs.sendPerCharacter.toggle()
         refreshStatusItem()
+    }
+
+    @objc private func checkForUpdates() {
+        UpdateService.shared.checkForUpdates(presentWhenCurrent: true)
     }
 }
