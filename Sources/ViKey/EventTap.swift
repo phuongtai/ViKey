@@ -4,6 +4,7 @@
 //  "marked text" của Input Method Kit nên KHÔNG có gạch chân ở bất kỳ app nào.
 
 import AppKit
+import ApplicationServices
 import CoreGraphics
 import VietEngine
 
@@ -15,7 +16,7 @@ final class EventTap {
     private let engine = TelexEngine()
     private var tap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
-    private let source = CGEventSource(stateID: .privateState)
+    private let source = CGEventSource(stateID: .hidSystemState)
 
     /// Gọi khi bật/tắt tiếng Việt bằng phím tắt, để cập nhật thanh menu.
     var onToggle: (() -> Void)?
@@ -143,6 +144,10 @@ final class EventTap {
         }
 
         let edit = engine.input(character, upper: character.isUppercase)
+        if usesChromiumFallback, edit.backspaces > 0,
+           replaceTextViaAccessibility(backspaces: edit.backspaces, insert: edit.insert) {
+            return nil
+        }
         return emit(edit.passthrough
                     ? Edit(backspaces: 0, insert: String(character), passthrough: false)
                     : edit,
@@ -160,10 +165,59 @@ final class EventTap {
         return text.first
     }
 
+    private var usesChromiumFallback: Bool {
+        switch NSWorkspace.shared.frontmostApplication?.bundleIdentifier {
+        case "com.google.Chrome", "com.microsoft.edgemac":
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func replaceTextViaAccessibility(backspaces: Int, insert: String) -> Bool {
+        let systemWide = AXUIElementCreateSystemWide()
+        var focusedValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString, &focusedValue) == .success,
+              let focusedValue,
+              CFGetTypeID(focusedValue) == AXUIElementGetTypeID() else { return false }
+          let focusedElement = unsafeBitCast(focusedValue, to: AXUIElement.self)
+
+        var selectionValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(focusedElement, kAXSelectedTextRangeAttribute as CFString, &selectionValue) == .success,
+              let selectionValue,
+              CFGetTypeID(selectionValue) == AXValueGetTypeID() else { return false }
+          let selection = unsafeBitCast(selectionValue, to: AXValue.self)
+
+        var range = CFRange()
+        guard AXValueGetValue(selection, .cfRange, &range), range.location >= backspaces else { return false }
+
+        var replacementRange = CFRange(location: range.location - backspaces, length: backspaces)
+        guard let selectedRange = AXValueCreate(.cfRange, &replacementRange),
+              AXUIElementSetAttributeValue(focusedElement, kAXSelectedTextRangeAttribute as CFString, selectedRange) == .success else {
+            return false
+        }
+        return AXUIElementSetAttributeValue(focusedElement, kAXSelectedTextAttribute as CFString, insert as CFString) == .success
+    }
+
     // MARK: - Phát sự kiện
 
     private func emit(_ edit: Edit, proxy: CGEventTapProxy, original: CGEvent) -> Unmanaged<CGEvent>? {
         if edit.passthrough { return Unmanaged.passUnretained(original) }
+
+        // Chromium ignores a synthetic Backspace. For the common one-character
+        // replacement (dd -> đ), turn the physical key-down itself into
+        // Backspace, then insert the replacement after that event is handled.
+        if edit.backspaces == 1, !edit.insert.isEmpty {
+            let emptyText: [UniChar] = []
+            original.setIntegerValueField(.keyboardEventKeycode, value: Int64(Self.backspaceKeyCode))
+            original.keyboardSetUnicodeString(stringLength: 0, unicodeString: emptyText)
+            original.flags = []
+            DispatchQueue.main.async { [weak self] in
+                self?.postText(edit.insert, proxy: proxy)
+            }
+            return Unmanaged.passUnretained(original)
+        }
+
         for _ in 0..<edit.backspaces { postKey(Self.backspaceKeyCode, proxy: proxy) }
         if !edit.insert.isEmpty { postText(edit.insert, proxy: proxy) }
         return nil   // nuốt phím gốc
@@ -174,7 +228,9 @@ final class EventTap {
             guard let e = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: isDown) else { continue }
             e.flags = []
             e.setIntegerValueField(.eventSourceUserData, value: vikeyEventMarker)
-            e.tapPostEvent(proxy)
+            // Chromium ignores Backspace posted through the current session-tap
+            // proxy. Posting at HID level makes the replacement delete apply.
+            e.post(tap: .cghidEventTap)
         }
     }
 
@@ -197,7 +253,7 @@ final class EventTap {
                 e.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
             }
             e.setIntegerValueField(.eventSourceUserData, value: vikeyEventMarker)
-            e.tapPostEvent(proxy)
+            e.post(tap: .cghidEventTap)
         }
     }
 }

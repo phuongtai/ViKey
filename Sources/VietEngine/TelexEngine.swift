@@ -236,8 +236,10 @@ public final class TelexEngine {
     private func applyHornOrBreve(typed: Character, upper: Bool) -> Bool {
         let cluster = lastVowelCluster()
 
-        // Chưa có nguyên âm nào -> w chính là "ư" ("tw" -> "tư").
-        if cluster.isEmpty, !units.contains(where: { $0.markKey == "w" }) {
+        // Sau một âm đầu hợp lệ, w chính là "ư" ("tw" -> "tư"). Một w đứng
+        // riêng phải được giữ nguyên để người dùng vẫn gõ được ký tự Latin này.
+        if cluster.isEmpty, !units.isEmpty, Syllable.isPlausiblePrefix(letters()),
+           !units.contains(where: { $0.markKey == "w" }) {
             units.append(Unit(base: "u", mark: .horn, markKey: "w", upper: upper, raw: String(typed)))
             return true
         }

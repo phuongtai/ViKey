@@ -69,7 +69,8 @@ func basicMarks() {
     #expect(telex("dd") == "đ")
     #expect(telex("did") == "đi")
     #expect(telex("chuaw") == "chưa")
-    #expect(telex("w") == "ư")
+    #expect(telex("w") == "w")
+    #expect(telex("ww") == "ww")
     #expect(telex("tw") == "tư")
     #expect(telex("uow") == "ươ")
 }
