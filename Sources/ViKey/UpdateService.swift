@@ -42,7 +42,7 @@ final class UpdateService {
 
         let alert = NSAlert()
         alert.messageText = "Có bản ViKey mới: \(remoteVersion)"
-        alert.informativeText = "Nhấn Cập nhật để tự tải, cài đặt và mở lại ViKey."
+        alert.informativeText = "Nhấn Cập nhật để tự tải, thay bản ViKey hiện tại và mở lại app. Cấu hình ViKey được giữ; macOS có thể yêu cầu bật lại quyền Trợ năng."
         alert.addButton(withTitle: "Cập nhật")
         alert.addButton(withTitle: "Để sau")
         guard alert.runModal() == .alertFirstButtonReturn else { return }
@@ -114,10 +114,19 @@ final class UpdateService {
         let scriptURL = stagingDirectory.appendingPathComponent("install-update.sh")
         let script = """
         #!/bin/sh
+        set -eu
         while kill -0 "$1" 2>/dev/null; do sleep 1; done
-        rm -rf "$3"
-        /usr/bin/ditto "$2" "$3"
+        backup="$3.update-backup-$$"
+        if ! mv "$3" "$backup"; then
+            exit 1
+        fi
+        if ! /usr/bin/ditto "$2" "$3"; then
+            rm -rf "$3"
+            mv "$backup" "$3"
+            exit 1
+        fi
         open -n "$3"
+        rm -rf "$backup"
         rm -rf "$4"
         """
         do {

@@ -10,7 +10,7 @@ swift run ViKey
 ```
 
 The app appears as `VI` or `EN` in the menu bar. Grant Accessibility permission in System Settings when macOS requests it.
-ViKey automatically checks GitHub Releases at launch. When a new version is available, click `Cập nhật` to download, install, and relaunch the app.
+ViKey automatically checks GitHub Releases at launch. When a new version is available, click `Cập nhật` to download, replace the installed app, and relaunch it. App preferences are stored separately and are preserved. macOS may ask you to grant Accessibility permission again after an update because release builds use ad-hoc signing.
 
 ## Bảng gõ Telex
 
