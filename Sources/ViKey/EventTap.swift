@@ -22,6 +22,7 @@ final class EventTap {
     var onToggle: (() -> Void)?
 
     private static let backspaceKeyCode: CGKeyCode = 51
+    private static let escapeKeyCode: CGKeyCode = 53
     private static let zKeyCode: CGKeyCode = 6
 
     init() { applyPreferences() }
@@ -146,6 +147,12 @@ final class EventTap {
         let edit = engine.input(character, upper: character.isUppercase)
         if usesChromiumFallback, edit.backspaces > 0,
            replaceTextViaAccessibility(backspaces: edit.backspaces, insert: edit.insert) {
+            // Thay thế qua Accessibility không đi qua luồng gõ bình thường của
+            // Chromium, nên danh sách gợi ý (history/autocomplete) cũ vẫn có
+            // thể mở. Escape chỉ đóng danh sách đó, không đổi văn bản vừa chèn.
+            DispatchQueue.main.async { [weak self] in
+                self?.postKey(Self.escapeKeyCode, proxy: proxy)
+            }
             return nil
         }
         return emit(edit.passthrough
