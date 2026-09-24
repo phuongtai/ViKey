@@ -96,6 +96,7 @@ func undoByRepeatingKey() {
     #expect(telex("uww") == "uw")
     #expect(telex("ass") == "as")
     #expect(telex("Sess") == "Ses")
+    #expect(telex("tess") == "tes")
 }
 
 // MARK: - Từ thật

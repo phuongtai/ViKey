@@ -198,12 +198,25 @@ final class EventTap {
         var range = CFRange()
         guard AXValueGetValue(selection, .cfRange, &range), range.location >= backspaces else { return false }
 
-        var replacementRange = CFRange(location: range.location - backspaces, length: backspaces)
+        let replacementStart = range.location - backspaces
+        var replacementRange = CFRange(location: replacementStart, length: backspaces)
         guard let selectedRange = AXValueCreate(.cfRange, &replacementRange),
               AXUIElementSetAttributeValue(focusedElement, kAXSelectedTextRangeAttribute as CFString, selectedRange) == .success else {
             return false
         }
-        return AXUIElementSetAttributeValue(focusedElement, kAXSelectedTextAttribute as CFString, insert as CFString) == .success
+        guard AXUIElementSetAttributeValue(focusedElement, kAXSelectedTextAttribute as CFString, insert as CFString) == .success else {
+            return false
+        }
+
+        // Chromium có thể giữ nguyên vùng chọn vừa được thay thế. Nếu không
+        // thu vùng chọn về một caret, thao tác Telex kế tiếp (ví dụ `tess`)
+        // sẽ thay nhầm vùng cũ và làm buffer lệch với nội dung ô nhập.
+        var caretRange = CFRange(location: replacementStart + insert.utf16.count, length: 0)
+        guard let caret = AXValueCreate(.cfRange, &caretRange) else { return true }
+        _ = AXUIElementSetAttributeValue(focusedElement,
+                                         kAXSelectedTextRangeAttribute as CFString,
+                                         caret)
+        return true
     }
 
     // MARK: - Phát sự kiện
